@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inicio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+    <h1>Bienvenido</h1>
+    <a href="/creacion.html">
+        <button>Ir a Crear Encuesta</button>
+    </a>
+
+    <h2>Votación en vivo</h2>
+    <button onclick="enviarVoto()">Votar</button>
+    <p id="resultado"></p>
+
+    <script>
+        const socket = new SockJS('/votacion-websocket');
+        const stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function (frame) {
+            console.log('Conectado: ' + frame);
+            stompClient.subscribe('/tema/resultados', function (mensaje) {
+                document.getElementById('resultado').innerText = mensaje.body;
+            });
+        });
+
+        function enviarVoto() {
+            stompClient.send("/app/votar", {}, "¡Nuevo voto!");
+        }
+    </script>
+</body>
+</html>

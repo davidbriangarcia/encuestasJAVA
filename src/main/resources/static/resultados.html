@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultados de la Encuesta</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .grafico-canvas {
+            width: 100% !important;
+            max-width: 500px;
+            height: auto !important;
+            margin: 0 auto 2rem auto;
+            display: block;
+        }
+        .grafico-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4 text-center">Resultados de la Encuesta</h1>
+        <div id="graficos-container" class="row justify-content-center"></div>
+        <ul id="lista-resultados" class="mt-4"></ul>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const preguntaId = params.get('id');
+
+        // 1. Cargar resultados actuales al cargar la página
+        fetch(`/api/encuestas/${preguntaId}/resultados`)
+            .then(response => response.json())
+            .then(data => {
+                actualizarResultados(data);
+            });
+
+        // 2. Suscribirse a actualizaciones en tiempo real
+        const socket = new SockJS('/ws');
+        const stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function (frame) {
+            stompClient.subscribe(`/topic/resultados/${preguntaId}`, function (message) {
+                const data = JSON.parse(message.body);
+                actualizarResultados(data);
+            });
+        });
+
+        let charts = []; // Para destruir los anteriores
+
+        function actualizarResultados(data) {
+            const lista = document.getElementById('lista-resultados');
+            const graficosContainer = document.getElementById('graficos-container');
+            lista.innerHTML = '';
+            graficosContainer.innerHTML = '';
+
+            // Destruir gráficos anteriores
+            charts.forEach(chart => chart.destroy());
+            charts = [];
+
+            if (data.resultados) {
+                Object.entries(data.resultados).forEach(([pregunta, opciones], index) => {
+                    // Mostrar pregunta como texto
+                    const titulo = document.createElement('h3');
+                    titulo.textContent = pregunta;
+                    titulo.className = "text-center mb-3";
+                    lista.appendChild(titulo);
+
+                    const ul = document.createElement('ul');
+                    ul.className = 'list-group mb-4';
+
+                    const labels = [];
+                    const values = [];
+
+                    Object.entries(opciones).forEach(([opcion, votos]) => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item';
+                        li.textContent = `${opcion}: ${votos} voto(s)`;
+                        ul.appendChild(li);
+
+                        labels.push(opcion);
+                        values.push(votos);
+                    });
+
+                    lista.appendChild(ul);
+
+                    // Crear columna para los gráficos
+                    const col = document.createElement('div');
+                    col.className = 'col-12 col-md-6 grafico-col';
+
+                    // Crear canvas para gráfico de barras
+                    const canvasBar = document.createElement('canvas');
+                    canvasBar.id = `barChart-${index}`;
+                    canvasBar.className = 'grafico-canvas mb-3';
+                    col.appendChild(canvasBar);
+
+                    // Crear canvas para gráfico de pastel
+                    const canvasPie = document.createElement('canvas');
+                    canvasPie.id = `pieChart-${index}`;
+                    canvasPie.className = 'grafico-canvas';
+                    col.appendChild(canvasPie);
+
+                    graficosContainer.appendChild(col);
+
+                    // Crear gráfico de barras
+                    charts.push(new Chart(canvasBar, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: `Votos por opción - "${pregunta}"`,
+                                data: values,
+                                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            aspectRatio: 2,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }));
+
+                    // Crear gráfico de pastel
+                    charts.push(new Chart(canvasPie, {
+                        type: 'pie',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: `Distribución de votos - "${pregunta}"`,
+                                data: values,
+                                backgroundColor: [
+                                    '#36A2EB',
+                                    '#FF6384',
+                                    '#FFCE56',
+                                    '#4BC0C0',
+                                    '#9966FF',
+                                    '#FF9F40'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            aspectRatio: 1.5
+                        }
+                    }));
+                });
+            }
+        }
+    </script>
+</body>
+</html>

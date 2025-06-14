@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Crear Encuesta</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Crear Nueva Encuesta</h1>
+        <form id="form-encuesta">
+            <div class="mb-3">
+                <label for="titulo-encuesta" class="form-label">Título de la Encuesta</label>
+                <input type="text" class="form-control" id="titulo-encuesta" required>
+            </div>
+
+            <hr>
+            
+            <div id="contenedor-preguntas">
+                </div>
+
+            <button type="button" class="btn btn-secondary mt-3" id="btn-agregar-pregunta">Añadir Pregunta</button>
+            <button type="submit" class="btn btn-primary mt-3">Crear Encuesta</button>
+        </form>
+
+        <div id="resultado-creacion" class="mt-4" style="display:none;">
+            <h3>¡Encuesta Creada!</h3>
+            <p>Comparte estos enlaces:</p>
+            <div class="alert alert-success">
+                <strong>Para Votar:</strong> <a id="link-votacion" href="#" target="_blank"></a>
+            </div>
+            <div class="alert alert-info">
+                <strong>Para Ver Resultados:</strong> <a id="link-resultados" href="#" target="_blank"></a>
+            </div>
+        </div>
+    </div>
+
+    <script src="creacion.js"></script>
+</body>
+</html>
